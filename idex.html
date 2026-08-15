@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>이우 FC 축구앱</title>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    :root {
+      /* 지브리풍 컬러 팔레트 */
+      --bg-color: #f6f0e4;
+      --wood-dark: #6e4c30;
+      --wood-light: #b08c6b;
+      --grass-light: #a3cfa4;
+      --grass-dark: #82b083;
+      --card-bg: #fffcf5;
+      --text-main: #4a3f35;
+      --border-radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body { 
+      font-family: 'Pretendard', sans-serif; 
+      background-color: var(--bg-color); 
+      color: var(--text-main); 
+      height: 100vh; 
+      display: flex; 
+      flex-direction: column; 
+      overflow: hidden; 
+    }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(110, 76, 48, 0.2); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(110, 76, 48, 0.5); }
+    
+    .top-bar { 
+      background-color: var(--wood-light); color: white; padding: 12px 15px; 
+      display: flex; justify-content: space-between; align-items: center; 
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 10; flex-wrap: wrap; gap: 10px;
+    }
+    .top-bar h1 { font-size: 1.1rem; font-weight: 700; margin: 0; }
+    .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    input[type="date"], input[type="number"], button { 
+      font-family: inherit; padding: 6px 10px; border: none; border-radius: 6px; outline: none; font-size: 0.9rem;
+    }
+    input[type="number"] { width: 50px; text-align: center; }
+    button { background-color: var(--wood-dark); color: white; cursor: pointer; font-weight: 600; transition: 0.2s; }
+    button:hover { filter: brightness(1.1); }
+    .save-btn { background-color: #d96c5b; padding: 6px 15px; }
+
+    .main-container { display: flex; flex: 1; overflow: hidden; padding: 10px; gap: 10px; }
+    
+    .panel { 
+      background: rgba(255,255,255,0.6); border-radius: var(--border-radius); border: 2px solid #eaddcf; 
+      padding: 12px; display: flex; flex-direction: column; box-shadow: 0 4px 10px rgba(0,0,0,0.03); 
+      backdrop-filter: blur(5px); 
+    }
+    
+    .left-panel { width: 200px; flex-shrink: 0; overflow-y: auto; height: 100%; }
+    .right-panel { width: 220px; flex-shrink: 0; overflow-y: auto; height: 100%; }
+    
+    .center-panel { 
+      flex: 1; display: flex; flex-direction: column; gap: 15px; min-width: 0; 
+      overflow-y: auto; padding-right: 5px; padding-bottom: 20px;
+    }
+
+    .panel-title { font-size: 1rem; font-weight: 700; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px dashed #d5c8b5; color: var(--wood-dark); }
+    
+    .add-player-container { display: flex; gap: 5px; margin-top: auto; padding-top: 15px; border-top: 2px dashed #dcd0bc; }
+    .add-player-container input { flex: 1; padding: 8px; border: 1px solid #dcd0bc; border-radius: 6px; outline: none; font-size: 0.9rem; width: 100%; }
+    .add-player-container button { padding: 6px 12px; background-color: var(--grass-dark); border-radius: 6px; white-space: nowrap; color: white; font-weight: bold; }
+
+    .player-list-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0e6d2; }
+    .player-list-item label { cursor: pointer; display: flex; align-items: center; gap: 8px; flex: 1; font-size: 0.95rem; }
+    .player-list-item input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+    
+    .play-count { font-size: 0.85rem; font-weight: 700; background: var(--grass-light); color: white; padding: 3px 8px; border-radius: 20px; letter-spacing: 0.5px; }
+    .play-count.high { background: #d96c5b; }
+
+    .stat-row { background: var(--card-bg); margin-bottom: 10px; padding: 10px; border-radius: 8px; border: 1px solid #eaddcf; display: flex; flex-direction: column; gap: 6px; }
+    .stat-name { font-weight: 700; font-size: 1rem; color: var(--wood-dark); }
+    .stat-controls { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+    .stat-btn { padding: 4px 10px; background: #eaddcf; color: var(--wood-dark); border-radius: 4px; font-weight: bold; font-size: 1.1rem; }
+
+    .tabs-container { display: flex; align-items: center; gap: 10px; font-weight: bold; color: var(--wood-dark); padding: 0 5px; flex-shrink: 0; }
+    .tabs-container > span { font-size: 1.05rem; white-space: nowrap; }
+    .tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 5px; -ms-overflow-style: none; scrollbar-width: none; align-items: center; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; background: rgba(255,255,255,0.6); border: 2px solid #eaddcf; border-radius: 50%; cursor: pointer; font-weight: 700; color: #887a6d; transition: 0.2s; font-size: 1rem; flex-shrink: 0; }
+    .tab.active { background: var(--wood-dark); border-color: var(--wood-dark); color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    
+    .field-container { display: flex; justify-content: center; align-items: flex-start; position: relative; width: 100%; flex-shrink: 0; }
+    
+    .field-wrapper { 
+      width: 100%; max-width: 420px; aspect-ratio: 2 / 3; 
+      background: linear-gradient(180deg, var(--grass-light) 0%, var(--grass-dark) 100%); 
+      border-radius: var(--border-radius); position: relative; box-shadow: inset 0 0 20px rgba(0,0,0,0.1); 
+      border: 4px solid #fff; overflow: hidden; touch-action: none;
+    }
+    
+    .field-line-center { position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background: rgba(255,255,255,0.6); transform: translateY(-50%); }
+    .field-circle { position: absolute; top: 50%; left: 50%; width: 25%; aspect-ratio: 1/1; border: 2px solid rgba(255,255,255,0.6); border-radius: 50%; transform: translate(-50%, -50%); min-width: 80px; }
+    .field-box-top { position: absolute; top: 0; left: 50%; width: 45%; height: 15%; border: 2px solid rgba(255,255,255,0.6); border-top: none; transform: translateX(-50%); }
+    .field-box-bottom { position: absolute; bottom: 0; left: 50%; width: 45%; height: 15%; border: 2px solid rgba(255,255,255,0.6); border-bottom: none; transform: translateX(-50%); }
+    
+    .bench { 
+      min-height: 120px; background: rgba(255,255,255,0.6); border-radius: var(--border-radius); 
+      border: 2px dashed #b08c6b; padding: 25px 10px 10px; display: flex; flex-wrap: wrap; gap: 8px; 
+      align-content: flex-start; position: relative; flex-shrink: 0;
+    }
+    .bench::before { 
+      content: "👇 체크된 선수는 여기에 나타납니다 (카드를 드래그하여 축구장으로 옮기세요)"; 
+      position: absolute; top: 6px; left: 50%; transform: translateX(-50%); 
+      font-size: 0.8rem; color: #887a6d; pointer-events: none; white-space: nowrap; font-weight: bold;
+    }
+
+    .player-card { 
+      background: var(--card-bg); border: 2px solid #dcd0bc; color: var(--wood-dark); 
+      font-weight: 700; padding: 8px 12px; border-radius: 20px; cursor: grab; user-select: none; 
+      box-shadow: 0 4px 6px rgba(0,0,0,0.08); transition: transform 0.1s; display: inline-flex; 
+      align-items: center; justify-content: center; z-index: 10; font-size: 0.95rem;
+      touch-action: none; white-space: nowrap;
+    }
+    .player-card:active { cursor: grabbing; transform: scale(1.05); }
+    .player-card.dragging { opacity: 0.7; }
+    .player-card.on-field { position: absolute; transform: translate(-50%, -50%); border-color: var(--wood-dark); background: #fff; }
+    
+    #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(246,240,228,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; font-weight: bold; color: var(--wood-dark); display: none; }
+
+    @media (max-width: 768px) {
+      body { height: auto; min-height: 100vh; overflow-y: visible; } 
+      .main-container { flex-direction: column; overflow: visible; height: auto; }
+      .left-panel, .right-panel, .center-panel { width: 100%; height: auto; overflow-y: visible; max-height: none; }
+      .center-panel { min-height: 600px; }
+      .bench::before { font-size: 0.7rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="loading">데이터 처리 중...</div>
+  
+  <div class="top-bar">
+    <h1>⚽ 이우 FC 축구앱</h1>
+    <div class="controls">
+      <input type="date" id="date-picker">
+      <label style="font-size: 0.95rem;">총 경기: <input type="number" id="total-games" value="7" min="1" max="15"></label>
+      <button class="save-btn" onclick="saveData()">저장하기</button>
+    </div>
+  </div>
+
+  <div class="main-container">
+    <div class="panel left-panel">
+      <div class="panel-title">출석 명단</div>
+      <div id="player-list"></div>
+      
+      <div class="add-player-container">
+        <input type="text" id="new-player-name" placeholder="새 선수 이름" onkeypress="if(event.key==='Enter') addNewPlayer()">
+        <button onclick="addNewPlayer()">추가</button>
+      </div>
+    </div>
+
+    <div class="center-panel">
+      <div class="tabs-container">
+        <span>경기:</span>
+        <div class="tabs" id="game-tabs"></div>
+      </div>
+      
+      <div class="field-container">
+        <div class="field-wrapper" id="field">
+          <div class="field-line-center"></div>
+          <div class="field-circle"></div>
+          <div class="field-box-top"></div>
+          <div class="field-box-bottom"></div>
+        </div>
+      </div>
+
+      <div class="bench" id="bench"></div>
+    </div>
+
+    <div class="panel right-panel">
+      <div class="panel-title">현재 경기 스탯</div>
+      <div style="font-size: 0.8rem; color: #887a6d; margin-bottom: 10px;">* 당일 기록은 누적됩니다.</div>
+      <div id="stat-list"></div>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // [단일 파일 동작을 위한 로컬 스토리지 데이터베이스 통합]
+    // Vercel 환경에서 구글 앱스 스크립트 코드(code.gs) 없이도 
+    // 브라우저 내부에 데이터를 저장하고 불러오도록 구현된 통합 로직입니다.
+    // ==========================================
+    const LocalDB = {
+      init: function() {
+        let players = JSON.parse(localStorage.getItem('fc_players'));
+        if (!players) {
+          const dummyPlayers = ['손흥민', '이강인', '김민재', '황희찬', '이재성', '황인범', '조규성', '설영우', '김영권', '조현우', '박용우'];
+          players = dummyPlayers.map(name => ({ name: name, part: 0, goals: 0, assists: 0 }));
+          localStorage.setItem('fc_players', JSON.stringify(players));
+        }
+        if (!localStorage.getItem('fc_stats')) {
+          localStorage.setItem('fc_stats', JSON.stringify([]));
+        }
+      },
+      getPlayers: function() {
+        const players = JSON.parse(localStorage.getItem('fc_players')) || [];
+        return players.map(p => p.name);
+      },
+      addPlayer: function(playerName) {
+        const players = JSON.parse(localStorage.getItem('fc_players')) || [];
+        if (players.some(p => p.name === playerName)) {
+          return { success: false, message: "이미 존재하는 선수입니다." };
+        }
+        players.push({ name: playerName, part: 0, goals: 0, assists: 0 });
+        localStorage.setItem('fc_players', JSON.stringify(players));
+        return { success: true, name: playerName };
+      },
+      saveDailyData: function(date, statsArray) {
+        const stats = JSON.parse(localStorage.getItem('fc_stats')) || [];
+        const players = JSON.parse(localStorage.getItem('fc_players')) || [];
+        const targetDate = new Date(date).toISOString().split('T')[0];
+
+        statsArray.forEach(stat => {
+          let isUpdated = false;
+          let oldGoals = 0;
+          let oldAssists = 0;
+
+          // 1. 당일 기록 업데이트 처리
+          for (let i = 0; i < stats.length; i++) {
+            if (stats[i].date === targetDate && stats[i].name === stat.name) {
+              oldGoals = stats[i].goals || 0;
+              oldAssists = stats[i].assists || 0;
+              
+              stats[i].games = stat.games;
+              stats[i].goals = stat.goals;
+              stats[i].assists = stat.assists;
+              isUpdated = true;
+              break;
+            }
+          }
+
+          if (!isUpdated) {
+            stats.push({ date: targetDate, name: stat.name, games: stat.games, goals: stat.goals, assists: stat.assists });
+          }
+
+          // 2. 선수 전체 누적 스탯 업데이트
+          for (let j = 0; j < players.length; j++) {
+            if (players[j].name === stat.name) {
+              const addedPart = isUpdated ? 0 : 1; 
+              const addedGoals = stat.goals - oldGoals;
+              const addedAssists = stat.assists - oldAssists;
+
+              players[j].part += addedPart;
+              players[j].goals += addedGoals;
+              players[j].assists += addedAssists;
+              break;
+            }
+          }
+        });
+
+        localStorage.setItem('fc_stats', JSON.stringify(stats));
+        localStorage.setItem('fc_players', JSON.stringify(players));
+      }
+    };
+
+    // 앱 실행 시 로컬 스토리지 초기화
+    LocalDB.init();
+
+    // 기존 google.script.run 대신 사용할 통합 API 모듈
+    const api = {
+      getPlayers: function(callback) {
+        setTimeout(() => callback(LocalDB.getPlayers()), 300);
+      },
+      addPlayer: function(name, callback) {
+        setTimeout(() => callback(LocalDB.addPlayer(name)), 300);
+      },
+      saveDailyData: function(date, statsArray, callback) {
+        setTimeout(() => {
+          LocalDB.saveDailyData(date, statsArray);
+          callback();
+        }, 500);
+      }
+    };
+
+
+    // ==========================================
+    // [프론트엔드 로직]
+    // ==========================================
+    let allPlayers = []; 
+    let attendance = new Set(); 
+    let totalGames = 7;
+    let currentTab = 1;
+    let gameData = {}; 
+    let dailyStats = {};
+    let draggedPlayer = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById('date-picker').value = new Date().toISOString().split('T')[0];
+      initGameData();
+      fetchPlayers();
+      
+      document.getElementById('total-games').addEventListener('change', (e) => {
+        let newTotal = parseInt(e.target.value);
+        if (isNaN(newTotal) || newTotal < 1) newTotal = 1;
+        totalGames = newTotal;
+        initGameData(); 
+        renderTabs();
+        renderAll();
+      });
+
+      const field = document.getElementById('field');
+      const bench = document.getElementById('bench');
+      
+      field.addEventListener('dragover', (e) => e.preventDefault());
+      bench.addEventListener('dragover', (e) => e.preventDefault());
+      
+      field.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (!draggedPlayer) return;
+        const rect = field.getBoundingClientRect();
+        let x = ((e.clientX - rect.left) / rect.width) * 100;
+        let y = ((e.clientY - rect.top) / rect.height) * 100;
+        handleDropOnField(draggedPlayer, Math.max(5, Math.min(x, 95)), Math.max(5, Math.min(y, 95)));
+      });
+
+      bench.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (!draggedPlayer) return;
+        handleDropOnBench(draggedPlayer);
+      });
+    });
+
+    function initGameData() {
+      for (let i = 1; i <= Math.max(totalGames, Object.keys(gameData).length); i++) {
+        if (i <= totalGames && !gameData[i]) {
+          gameData[i] = { onField: [], bench: Array.from(attendance) };
+        } else if (i > totalGames) {
+          delete gameData[i]; 
+        }
+      }
+    }
+
+    function fetchPlayers() {
+      showLoading(true);
+      api.getPlayers(function(data) {
+        allPlayers = data;
+        allPlayers.forEach(p => dailyStats[p] = { goals: 0, assists: 0 });
+        renderLeftPanel();
+        renderTabs();
+        showLoading(false);
+      });
+    }
+
+    function renderLeftPanel() {
+      const listDiv = document.getElementById('player-list');
+      listDiv.innerHTML = '';
+      
+      allPlayers.forEach(name => {
+        let playCount = 0;
+        for (let i = 1; i <= totalGames; i++) {
+          if (gameData[i] && gameData[i].onField.some(p => p.name === name)) playCount++;
+        }
+
+        const div = document.createElement('div');
+        div.className = 'player-list-item';
+        
+        const isChecked = attendance.has(name) ? 'checked' : '';
+        const countClass = playCount >= totalGames ? 'play-count high' : 'play-count';
+
+        div.innerHTML = `
+          <label>
+            <input type="checkbox" value="${name}" ${isChecked} onchange="toggleAttendance('${name}', this.checked)">
+            ${name}
+          </label>
+          ${attendance.has(name) ? `<span class="${countClass}">${playCount} / ${totalGames}</span>` : ''}
+        `;
+        listDiv.appendChild(div);
+      });
+    }
+
+    function toggleAttendance(name, isAttending) {
+      if (isAttending) {
+        attendance.add(name);
+        for(let i=1; i<=totalGames; i++){
+          if(gameData[i]) {
+            if(!gameData[i].onField.some(p=>p.name === name) && !gameData[i].bench.includes(name)){
+               gameData[i].bench.push(name);
+            }
+          }
+        }
+      } else {
+        attendance.delete(name);
+        for(let i=1; i<=totalGames; i++){
+          if(gameData[i]) {
+            gameData[i].onField = gameData[i].onField.filter(p => p.name !== name);
+            gameData[i].bench = gameData[i].bench.filter(n => n !== name);
+          }
+        }
+      }
+      renderAll();
+    }
+
+    function addNewPlayer() {
+      const input = document.getElementById('new-player-name');
+      const name = input.value.trim();
+      
+      if (!name) return;
+      if (allPlayers.includes(name)) {
+        alert("이미 명단에 존재하는 선수입니다.");
+        return;
+      }
+
+      showLoading(true);
+      api.addPlayer(name, function(res) {
+        showLoading(false);
+        if(res.success) {
+          allPlayers.push(res.name); 
+          dailyStats[res.name] = { goals: 0, assists: 0 }; 
+          attendance.add(res.name); 
+          
+          for(let i=1; i<=totalGames; i++) {
+            if(gameData[i]) gameData[i].bench.push(res.name);
+          }
+          
+          input.value = ''; 
+          renderAll(); 
+        } else {
+          alert(res.message);
+        }
+      });
+    }
+
+    function renderTabs() {
+      const tabsDiv = document.getElementById('game-tabs');
+      tabsDiv.innerHTML = '';
+      if(currentTab > totalGames) currentTab = totalGames;
+
+      for (let i = 1; i <= totalGames; i++) {
+        const btn = document.createElement('div');
+        btn.className = `tab ${i === currentTab ? 'active' : ''}`;
+        btn.innerText = `${i}`;
+        btn.onclick = () => { currentTab = i; renderTabs(); renderAll(); };
+        tabsDiv.appendChild(btn);
+      }
+    }
+
+    function renderAll() {
+      renderLeftPanel(); 
+      renderFieldAndBench();
+      renderRightPanel();
+    }
+
+    function renderFieldAndBench() {
+      const field = document.getElementById('field');
+      const bench = document.getElementById('bench');
+      
+      const existingCards = field.querySelectorAll('.player-card');
+      existingCards.forEach(card => card.remove());
+      
+      bench.querySelectorAll('.player-card').forEach(card => card.remove());
+
+      const currentData = gameData[currentTab];
+      if (!currentData) return;
+
+      currentData.onField.forEach(pData => {
+        const card = createPlayerCard(pData.name, true);
+        card.style.left = pData.x + '%';
+        card.style.top = pData.y + '%';
+        field.appendChild(card);
+      });
+
+      currentData.bench.forEach(name => {
+        const card = createPlayerCard(name, false);
+        bench.appendChild(card);
+      });
+    }
+
+    function createPlayerCard(name, isOnField) {
+      const el = document.createElement('div');
+      el.className = `player-card ${isOnField ? 'on-field' : ''}`;
+      el.innerText = name;
+      el.draggable = true; 
+      
+      el.addEventListener('dragstart', (e) => {
+        draggedPlayer = name;
+        el.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', name);
+      });
+      el.addEventListener('dragend', () => { el.classList.remove('dragging'); draggedPlayer = null; });
+      
+      addTouchEvents(el, name, isOnField);
+
+      return el;
+    }
+
+    function addTouchEvents(card, name, isOnField) {
+      card.addEventListener('touchstart', (e) => {
+        draggedPlayer = name;
+        card.classList.add('dragging');
+        
+        card.style.position = 'fixed';
+        card.style.zIndex = '9999';
+        
+        const touch = e.touches[0];
+        moveCardToTouch(card, touch.clientX, touch.clientY);
+      }, { passive: false });
+
+      card.addEventListener('touchmove', (e) => {
+        if(!draggedPlayer) return;
+        e.preventDefault(); 
+        const touch = e.touches[0];
+        moveCardToTouch(card, touch.clientX, touch.clientY);
+      }, { passive: false });
+
+      card.addEventListener('touchend', (e) => {
+        if(!draggedPlayer) return;
+        const touch = e.changedTouches[0];
+        
+        card.style.display = 'none';
+        const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        card.style.display = 'inline-flex';
+        card.style.position = ''; 
+        card.style.zIndex = '';
+        card.classList.remove('dragging');
+
+        if (elemBelow) {
+          const fieldWrapper = elemBelow.closest('#field');
+          const benchWrapper = elemBelow.closest('#bench');
+
+          if (fieldWrapper) {
+            const rect = fieldWrapper.getBoundingClientRect();
+            let x = ((touch.clientX - rect.left) / rect.width) * 100;
+            let y = ((touch.clientY - rect.top) / rect.height) * 100;
+            x = Math.max(5, Math.min(x, 95));
+            y = Math.max(5, Math.min(y, 95));
+            handleDropOnField(draggedPlayer, x, y);
+          } else if (benchWrapper) {
+            handleDropOnBench(draggedPlayer);
+          } else {
+            renderAll(); 
+          }
+        }
+        draggedPlayer = null;
+      });
+    }
+
+    function moveCardToTouch(card, x, y) {
+      card.style.left = x + 'px';
+      card.style.top = y + 'px';
+      card.style.transform = 'translate(-50%, -50%)';
+    }
+
+    function handleDropOnField(name, x, y) {
+      let currentData = gameData[currentTab];
+      
+      if (currentData.bench.includes(name)) { 
+        currentData.bench = currentData.bench.filter(n => n !== name);
+        currentData.onField.push({ name: name, x, y });
+      } else { 
+        const playerObj = currentData.onField.find(p => p.name === name);
+        if (playerObj) { playerObj.x = x; playerObj.y = y; }
+      }
+      draggedPlayer = null;
+      renderAll();
+    }
+
+    function handleDropOnBench(name) {
+      let currentData = gameData[currentTab];
+      if (currentData.onField.some(p => p.name === name)) { 
+        currentData.onField = currentData.onField.filter(p => p.name !== name);
+        if(!currentData.bench.includes(name)){
+            currentData.bench.push(name);
+        }
+      }
+      draggedPlayer = null;
+      renderAll();
+    }
+
+    function renderRightPanel() {
+      const statList = document.getElementById('stat-list');
+      statList.innerHTML = '';
+      
+      const currentData = gameData[currentTab];
+      if (!currentData || currentData.onField.length === 0) {
+        statList.innerHTML = '<div style="color:#a39a8e; text-align:center; padding: 20px; font-size: 0.95rem;">필드에 선수를 배치하면<br>스탯 입력창이 나타납니다.</div>';
+        return;
+      }
+
+      currentData.onField.forEach(p => {
+        const name = p.name;
+        const div = document.createElement('div');
+        div.className = 'stat-row';
+        div.innerHTML = `
+          <div class="stat-name">${name}</div>
+          <div class="stat-controls">
+            <span>⚽ 골</span>
+            <div>
+              <button class="stat-btn" onclick="updateStat('${name}', 'goals', -1)">-</button>
+              <span style="display:inline-block; width:25px; text-align:center; font-weight: bold;">${dailyStats[name].goals}</span>
+              <button class="stat-btn" onclick="updateStat('${name}', 'goals', 1)">+</button>
+            </div>
+          </div>
+          <div class="stat-controls">
+            <span>👟 어시스트</span>
+            <div>
+              <button class="stat-btn" onclick="updateStat('${name}', 'assists', -1)">-</button>
+              <span style="display:inline-block; width:25px; text-align:center; font-weight: bold;">${dailyStats[name].assists}</span>
+              <button class="stat-btn" onclick="updateStat('${name}', 'assists', 1)">+</button>
+            </div>
+          </div>
+        `;
+        statList.appendChild(div);
+      });
+    }
+
+    function updateStat(name, type, amount) {
+      dailyStats[name][type] += amount;
+      if(dailyStats[name][type] < 0) dailyStats[name][type] = 0;
+      renderRightPanel();
+    }
+
+    function saveData() {
+      if(attendance.size === 0) {
+        alert("출석한 선수가 없습니다."); return;
+      }
+
+      const date = document.getElementById('date-picker').value;
+      const statsArray = [];
+
+      attendance.forEach(name => {
+        let playCount = 0;
+        for (let i = 1; i <= totalGames; i++) {
+          if (gameData[i] && gameData[i].onField.some(p => p.name === name)) playCount++;
+        }
+
+        statsArray.push({
+          name: name,
+          games: playCount,
+          goals: dailyStats[name].goals,
+          assists: dailyStats[name].assists
+        });
+      });
+
+      showLoading(true);
+      api.saveDailyData(date, statsArray, function() {
+        showLoading(false);
+        alert("기록이 성공적으로 저장되었습니다!");
+      });
+    }
+
+    function showLoading(show) {
+      document.getElementById('loading').style.display = show ? 'flex' : 'none';
+    }
+  </script>
+</body>
+</html>
